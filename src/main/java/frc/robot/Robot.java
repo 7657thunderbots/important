@@ -28,7 +28,7 @@ public class Robot extends TimedRobot {
     public final Timer wait = new Timer();
 
 
-    final double tkP = -0.0045;
+     double tkP = -0.00475;
     final double tkI = -0.005;
     final double tkD = -0.001;
    final double tiLimit = 3;
@@ -107,7 +107,7 @@ public class Robot extends TimedRobot {
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  
+  private boolean placepiece2;
   private boolean placed ;
   private boolean waited;
   private boolean waited2;
@@ -126,6 +126,10 @@ public class Robot extends TimedRobot {
   private boolean armdown=false;
   private boolean turncommand=false;
   private boolean grabpiece2=false;
+  private boolean wristup=false;
+  private boolean stoppedturn=false;
+  private boolean stopturning=false;
+  private boolean wristdown2=false;
     int timer;
     
     
@@ -255,7 +259,11 @@ public class Robot extends TimedRobot {
     turned=false;
     turncommand=false;
    grabpiece2=false;
-    
+   wristup=false;
+   tkP = -0.0045;
+   stoppedturn=false;
+   placepiece2=false;
+   stopturning=false;
   }
 
 
@@ -344,8 +352,9 @@ public class Robot extends TimedRobot {
           armdown=true;
         }
 
-        if(elbow.Elbowencoder.getPosition()>-4&&armdown==true){
+        if(elbow.Elbowencoder.getPosition()>-4 &&armdown==true){
           dsetpoint=3.6;
+          armdown=false;
         }
         if (dsetpoint==3.6&&turned==false){
           if (doutputSpeed > .25){
@@ -370,7 +379,7 @@ public class Robot extends TimedRobot {
        
         if (waited2==true && dsensorPosition > .35 && fianl_driveup==false) {
         shoulder.Ssetpoint=0;
-        elbow.EkP=0.015;
+        elbow.EkP=0.018;
         elbow.Esetpoint = 0;
         shoulder.Ssetpoint=0;
         }
@@ -385,14 +394,14 @@ public class Robot extends TimedRobot {
           dsetpoint=1.6;
         }
 
-        if (doutputSpeed > .5){
-          doutputSpeed=.5;
+        if (doutputSpeed > .4){
+          doutputSpeed=.4;
         }
-        if (doutputSpeed<-.6){
-          doutputSpeed=-.6;
+        if (doutputSpeed<-.4){
+          doutputSpeed=-.4;
         }
 
-        if (dsetpoint==1.6 &&dsensorPosition<2){
+        if (turned==true && dsensorPosition<3.9){
           grabpiece2=true;
           Hand.hsetpoint=-20;
           pneumatics.mdoubleSolenoid.set(DoubleSolenoid.Value.kForward);
@@ -400,6 +409,28 @@ public class Robot extends TimedRobot {
         if (grabpiece2==true&&Hand.hande.getPosition()<-5){
           wrist.Wsetpoint=3.8;
         }
+        if (wrist.wriste.getPosition() > 1 &&grabpiece2==true){
+          wristup=true;
+          tsetpoint=12.1;
+        }
+        
+        if (stoppedturn==true){
+          dsetpoint=-3.9;
+        }
+        if (dsensorPosition<-2.6&&placepiece2==false){
+          elbow.Esetpoint=-39.071121;
+          shoulder.Ssetpoint = 150.377;
+          elbow.EkP=0.05;
+        }
+        if (dsensorPosition<-3.5){
+          wrist.Wsetpoint=-20;
+          wristdown2=true;
+        }
+        if (wristdown2==true&& wrist.wriste.getPosition()<-6){
+          Hand.hsetpoint = 0;
+          pneumatics.mdoubleSolenoid.set(DoubleSolenoid.Value.kReverse);
+        }
+        
 
 
 
@@ -430,7 +461,9 @@ public class Robot extends TimedRobot {
         if (tsetpoint==0){
           turn=0;
         }
-
+        if (tsensorPosition<1 &&tsensorPosition>-1 && tsetpoint==12.1 ){
+          stopturning=true;
+        }
         // if (turn > .5){
         //   doutputSpeed=.5;
         // }
@@ -440,9 +473,13 @@ public class Robot extends TimedRobot {
         // update last- variables
         lastTimestamp = Timer.getFPGATimestamp();
         tlastError = terror;
-        if (tsetpoint-tsensorPosition>-42&&tsetpoint<0){
+        if (tsetpoint-tsensorPosition>-42&&tsetpoint<0&&grabpiece2==false){
           drivetrain.tdrive(doutputSpeed,doutputSpeed, false);
           dsetpoint=1.6;
+        }
+        else if (wristup==true && stopturning==true ){
+          drivetrain.tdrive(doutputSpeed,doutputSpeed, false);
+          stoppedturn=true;
         }
         else{
           drivetrain.tdrive(-turn+doutputSpeed,turn+doutputSpeed, false);
